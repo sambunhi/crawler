@@ -12,7 +12,7 @@ RUN pip install \
 
 RUN python3 -m nltk.downloader -d /usr/share/nltk_data -q popular
 
-COPY . /sample_crawler
-WORKDIR /sample_crawler
+COPY ./sample_crawler.py /app/sample_crawler.py
+WORKDIR /app
 
-CMD ["python3", "crawler_sample.py"]
+CMD ["python3", "sample_crawler.py"]

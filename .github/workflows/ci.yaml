@@ -9,7 +9,6 @@ on:
     {}
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -34,6 +33,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [sample_crawler, google_news_crawler]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -49,7 +52,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
           flavor: |
             latest=true
           tags: |
@@ -60,6 +63,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          file: ./containers/Dockerfile-${{ matrix.image }}
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
