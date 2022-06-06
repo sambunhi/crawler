@@ -1,4 +1,4 @@
-﻿import requests
+import requests
 from requests_html import HTML, HTMLSession
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
