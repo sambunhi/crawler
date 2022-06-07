@@ -14,3 +14,21 @@ def test_tokenize():
         "中文": 1,
         "分詞": 1,
     }
+
+def test_tokenize_from_url():
+    tokenizer = ChineseTokenizer()
+    tokenizer.tokenize_from_url("https://www.chinatimes.com/realtimenews/20220604000014-260410?chdtv")
+
+def test_tokenize_filter():
+    tokenizer = ChineseTokenizer()
+    tokenizer.add_keyword("結巴")
+    tokenizer.add_keyword("分詞")
+    result = tokenizer.filter_keyword({
+        "結巴": 8,
+        "中文": 93,
+        "分詞": 32,
+    })
+    assert result == {
+        "結巴": 8,
+        "分詞": 32,
+    }
