@@ -1,0 +1,12 @@
+FROM alpine:3.16
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    py3-wheel \
+    py3-requests \
+    py3-feedparser
+
+COPY ./rss_crawler.py /app/rss_crawler.py
+WORKDIR /app
+
+CMD ["python3", "rss_crawler.py"]

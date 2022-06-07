@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [sample_crawler, google_news_crawler]
+        image: [sample_crawler, google_news_crawler, rss_crawler]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
