@@ -22,7 +22,7 @@ class SambunhiAPI:
             prepreq.headers["Authorization"] = f"Bearer {self.token}"
 
         s = requests.Session()
-        return s.send(prepreq)
+        return s.send(prepreq, timeout=5)
 
     def fetch_crawler_config(self):
         r = self.send_request("GET", "/api/v1/crawler")
