@@ -11,4 +11,3 @@ def test_google_search():
     query = "TSMC Ingas"
     results = crawler.google_search(query)
     assert len(results) > 0
-
