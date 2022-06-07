@@ -20,7 +20,7 @@ jobs:
           apk add python3 py3-pip py3-wheel py3-requests py3-beautifulsoup4
           py3-pytest py3-pytest-cov py3-feedparser
 
-          pip install requests-html nltk
+          pip install requests-html nltk jieba
 
           python3 -m nltk.downloader -d /usr/share/nltk_data -q popular
       - name: test
@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [sample_crawler, google_news_crawler, rss_crawler]
+        image: [sample_crawler, google_news_crawler, rss_crawler, tokenizer]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
