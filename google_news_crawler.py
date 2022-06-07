@@ -24,6 +24,7 @@ class GoogleNewsCrawler:
 
         response = session.get(self.base_url,
             params=search_params,
+            timeout=15
         )
         return response
 

@@ -32,7 +32,7 @@ class ChineseTokenizer:
 
     def tokenize_from_url(self, url):
         session = HTMLSession()
-        response = session.get(url)
+        response = session.get(url, timeout=15)
 
         orignal_text = ''
         soup = BeautifulSoup(response.text, 'html.parser')

@@ -3,6 +3,7 @@ import json
 import os
 from sys import stderr
 import time
+import requests
 from requests.exceptions import RequestException
 import feedparser
 
@@ -11,7 +12,10 @@ def eprint(*args, **kwargs):
 
 class RssCrawler:
     def fetch(self, url):
-        feed = feedparser.parse(url)
+        r = requests.get(url, timeout=15)
+        r.raise_for_status()
+        feed = feedparser.parse(r.text)
+
         output = []
         for entry in feed.entries:
             output.append({
