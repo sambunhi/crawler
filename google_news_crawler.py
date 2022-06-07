@@ -2,10 +2,15 @@
 import json
 from urllib.parse import urljoin
 import os
+import sys
 from sys import stderr
+from time import localtime, strftime
 import requests
 from requests_html import HTML, HTMLSession
 from bs4 import BeautifulSoup
+
+def eprint(*args, **kwargs):
+    print(*args, file=stderr, **kwargs)
 
 class GoogleNewsCrawler:
     def __init__(self):
@@ -59,31 +64,47 @@ class GoogleNewsCrawler:
 
 if __name__ == "__main__":
     api_baseurl = os.getenv("CRAWLER_API_URL", "https://sambunhi.nycu.one")
+    source_name = os.getenv("CRAWLER_SOURCE_NAME", "Google")
     dry_run = "CRAWLER_DRYRUN" in os.environ
+    google_source_id = None
 
     response = requests.get(urljoin(api_baseurl, "/api/v1/crawler"))
     response.raise_for_status()
-    keywords = response.json()["keywords"]
+    cfg = response.json()
+
+    for src in cfg["sources"]:
+        if src["name"] == source_name:
+            google_source_id = src["id"]
+            break
+
+    if google_source_id is None:
+        eprint(f"Source list doesn't contain {source_name}.")
+        eprint("GoogleNews Crawler is disabled. Exit now...")
+        sys.exit()
 
     crawler = GoogleNewsCrawler()
-    for k in keywords:
+    for k in cfg["keywords"]:
         print(f"Searching: {k}", file=stderr)
         try:
             results = crawler.google_search(k, num=50, timeline='qdr:d')
-            print(f"Found {len(results)} results", file=stderr)
+            eprint(f"Found {len(results)} results")
         except Exception as e:
-            print(f"Error occurred while searching: {e}", file=stderr)
+            eprint(f"Error occurred while searching: {e}")
             continue
+
+        for r in results:
+            r['source_id'] = google_source_id
+            r['published_at'] = strftime("%Y-%m-%d", localtime())
 
         if not dry_run:
             try:
-                r = requests.put(urljoin(api_baseurl, "/api/v1/article"), json=results)
+                r = requests.post(urljoin(api_baseurl, "/api/v1/article"), json=results)
                 r.raise_for_status()
-                print("Upload completed!", file=stderr)
+                eprint("Upload completed!")
             except requests.exceptions.RequestException as e:
-                print(f"Error occurred while uploading: {e}", file=stderr)
+                eprint(f"Error occurred while uploading: {e}")
         else:
-            print("Running in dryrun mode. Skip uploading!", file=stderr)
+            eprint("Running in dryrun mode. Skip uploading!")
             print(json.dumps(results, indent=2, ensure_ascii=False))
 
-    print("Google News Crawler completed!", file=stderr)
+    eprint("Google News Crawler completed!")
