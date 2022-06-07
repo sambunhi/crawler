@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import json
-from urllib.parse import urljoin
 import os
 import sys
 from sys import stderr
 from time import localtime, strftime
-import requests
-from requests_html import HTML, HTMLSession
+from requests.exceptions import RequestException
+from requests_html import HTMLSession
 from bs4 import BeautifulSoup
 
 def eprint(*args, **kwargs):
@@ -63,27 +62,29 @@ class GoogleNewsCrawler:
         return r
 
 if __name__ == "__main__":
-    api_baseurl = os.getenv("CRAWLER_API_URL", "https://sambunhi.nycu.one")
+    from api import SambunhiAPI
+
     source_name = os.getenv("CRAWLER_SOURCE_NAME", "Google")
     dry_run = "CRAWLER_DRYRUN" in os.environ
-    google_source_id = None
 
-    response = requests.get(urljoin(api_baseurl, "/api/v1/crawler"))
-    response.raise_for_status()
-    cfg = response.json()
+    api = SambunhiAPI()
 
-    for src in cfg["sources"]:
-        if src["name"] == source_name:
-            google_source_id = src["id"]
-            break
+    api_baseurl = os.environ.get("CRAWLER_API_URL")
+    if api_baseurl is not None:
+        api.set_base_url(api_baseurl)
 
+    api_token = os.environ.get("CRAWLER_TOKEN")
+    if api_token is not None:
+        api.set_authorization_token(api_token)
+
+    google_source_id = api.get_source_id_from_name(source_name)
     if google_source_id is None:
         eprint(f"Source list doesn't contain {source_name}.")
         eprint("GoogleNews Crawler is disabled. Exit now...")
         sys.exit()
 
     crawler = GoogleNewsCrawler()
-    for k in cfg["keywords"]:
+    for k in api.get_keywords():
         print(f"Searching: {k}", file=stderr)
         try:
             results = crawler.google_search(k, num=50, timeline='qdr:d')
@@ -98,10 +99,9 @@ if __name__ == "__main__":
 
         if not dry_run:
             try:
-                r = requests.post(urljoin(api_baseurl, "/api/v1/article"), json=results)
-                r.raise_for_status()
+                api.upload_articles(results)
                 eprint("Upload completed!")
-            except requests.exceptions.RequestException as e:
+            except RequestException as e:
                 eprint(f"Error occurred while uploading: {e}")
         else:
             eprint("Running in dryrun mode. Skip uploading!")

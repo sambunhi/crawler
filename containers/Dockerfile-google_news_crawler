@@ -9,7 +9,7 @@ RUN apk add --no-cache \
 RUN pip install \
     requests-html
 
-COPY ./google_news_crawler.py /app/google_news_crawler.py
+COPY ./api.py ./google_news_crawler.py /app/
 WORKDIR /app
 
 CMD ["python3", "google_news_crawler.py"]

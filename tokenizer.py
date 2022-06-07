@@ -2,11 +2,10 @@
 import json
 import os
 from sys import stderr
-from urllib.parse import urljoin
 from bs4 import BeautifulSoup
-from requests_html import HTMLSession
-import requests
 import jieba
+from requests_html import HTMLSession
+from requests.exceptions import RequestException
 
 def eprint(*args, **kwargs):
     print(*args, file=stderr, **kwargs)
@@ -43,25 +42,31 @@ class ChineseTokenizer:
         return self.tokenize(orignal_text)
 
 if __name__ == "__main__":
-    api_baseurl = os.getenv("CRAWLER_API_URL", "https://sambunhi.nycu.one")
+    from api import SambunhiAPI
+
     dry_run = "CRAWLER_DRYRUN" in os.environ
 
-    cfg_response = requests.get(urljoin(api_baseurl, "/api/v1/crawler"))
-    cfg_response.raise_for_status()
-    keywords = cfg_response.json()["keywords"]
+    api = SambunhiAPI()
+
+    api_baseurl = os.environ.get("CRAWLER_API_URL")
+    if api_baseurl is not None:
+        api.set_base_url(api_baseurl)
+
+    api_token = os.environ.get("CRAWLER_TOKEN")
+    if api_token is not None:
+        api.set_authorization_token(api_token)
 
     tokenizer = ChineseTokenizer()
+
+    keywords = api.get_keywords()
     for word in keywords:
         tokenizer.add_keyword(word)
 
-    tasks_response = requests.get(urljoin(api_baseurl, "/api/v1/crawler/link"))
-    tasks_response.raise_for_status()
-    tasks = tasks_response.json()
-
-    for task in tasks:
-        eprint(f"Fetching: {task}")
+    tasks = api.get_untokenized_links()
+    for url in tasks:
+        eprint(f"Fetching: {url}")
         try:
-            result = tokenizer.tokenize_from_url(task)
+            result = tokenizer.tokenize_from_url(url)
             result = tokenizer.filter_keyword(result)
             eprint("Tokenize completed!")
         except Exception as e:
@@ -70,13 +75,9 @@ if __name__ == "__main__":
 
         if not dry_run:
             try:
-                r = requests.put(urljoin(api_baseurl, "/api/v1/article"), json={
-                    'url': task,
-                    'keywords': result,
-                })
-                r.raise_for_status()
+                api.update_article_keywords(url, result)
                 print("Upload completed!", file=stderr)
-            except requests.exceptions.RequestException as e:
+            except RequestException as e:
                 print(f"Error occurred while uploading: {e}", file=stderr)
         else:
             print("Running in dryrun mode. Skip uploading!", file=stderr)

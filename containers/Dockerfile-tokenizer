@@ -10,7 +10,7 @@ RUN pip install \
     requests-html \
     jieba
 
-COPY ./tokenizer.py /app/tokenizer.py
+COPY ./api.py ./tokenizer.py /app/
 WORKDIR /app
 
 CMD ["python3", "tokenizer.py"]

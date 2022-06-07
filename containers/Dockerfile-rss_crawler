@@ -6,7 +6,7 @@ RUN apk add --no-cache \
     py3-requests \
     py3-feedparser
 
-COPY ./rss_crawler.py /app/rss_crawler.py
+COPY ./api.py ./rss_crawler.py /app/
 WORKDIR /app
 
 CMD ["python3", "rss_crawler.py"]

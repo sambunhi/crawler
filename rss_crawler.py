@@ -3,8 +3,7 @@ import json
 import os
 from sys import stderr
 import time
-from urllib.parse import urljoin
-import requests
+from requests.exceptions import RequestException
 import feedparser
 
 def eprint(*args, **kwargs):
@@ -24,15 +23,22 @@ class RssCrawler:
         return output
 
 if __name__ == "__main__":
-    api_baseurl = os.getenv("CRAWLER_API_URL", "https://sambunhi.nycu.one")
+    from api import SambunhiAPI
+
     dry_run = "CRAWLER_DRYRUN" in os.environ
 
-    response = requests.get(urljoin(api_baseurl, "/api/v1/crawler"))
-    response.raise_for_status()
-    sources = response.json()["sources"]
+    api = SambunhiAPI()
+
+    api_baseurl = os.environ.get("CRAWLER_API_URL")
+    if api_baseurl is not None:
+        api.set_base_url(api_baseurl)
+
+    api_token = os.environ.get("CRAWLER_TOKEN")
+    if api_token is not None:
+        api.set_authorization_token(api_token)
 
     crawler = RssCrawler()
-    for src in sources:
+    for src in api.get_sources():
         eprint(f"Fetching: {src['name']} ({src['url']})")
         try:
             results = crawler.fetch(src['url'])
@@ -46,10 +52,9 @@ if __name__ == "__main__":
 
         if not dry_run:
             try:
-                r = requests.post(urljoin(api_baseurl, "/api/v1/article"), json=results)
-                r.raise_for_status()
+                api.upload_articles(results)
                 print("Upload completed!", file=stderr)
-            except requests.exceptions.RequestException as e:
+            except RequestException as e:
                 print(f"Error occurred while uploading: {e}", file=stderr)
         else:
             print("Running in dryrun mode. Skip uploading!", file=stderr)
